@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct MoneyMateApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainAppView()
+                .modelContainer(for: Transaction.self)
         }
     }
 }
