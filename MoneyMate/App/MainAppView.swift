@@ -10,12 +10,12 @@ import SwiftData
 
 struct MainAppView: View {
     @State private var isShowingAddSheet = false
-    @State private var selectedTab = 0
+    @EnvironmentObject var appState: AppState
     @State private var expandMiniPlayer: Bool = false
     @Namespace private var animation
     
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: $appState.selectedTab) {
             Tab.init("总览", systemImage: "chart.bar.xaxis", value: 0) {
                 NavigationStack {
                     StatsView()
@@ -34,27 +34,31 @@ struct MainAppView: View {
                 }
             }
 
-            Tab.init("添加", systemImage: "plus.circle", value: 3, role: .search) {
-                Color.clear
-                    .onAppear {
-                        isShowingAddSheet = true
-                    }
-                    .sheet(isPresented: $isShowingAddSheet, onDismiss: {
-                        selectedTab = 1 // Switch to "账单" tab after dismiss
-                    }) {
-                        AddEditView(transaction: .constant(nil))
-                            .presentationDetents([.medium, .large])
-                    }
+            Tab.init("添加", systemImage: "plus", value: 3, role: .search) {
+                EmptyView()
             }
         }
+        .onChange(of: appState.selectedTab, initial: false) { oldValue, newValue in
+            if newValue == 3 {
+                appState.selectedTab = 1
+                isShowingAddSheet = true
+            }
+        }
+        .sheet(isPresented: $isShowingAddSheet, onDismiss: {
+            // 可选：在关闭弹窗后保留账单页面
+        }) {
+            AddEditView(transaction: .constant(nil))
+        }
+        .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory {
             MiniPlayerView()
+                .matchedTransitionSource(id: "MINIVIEW", in: animation)
                 .onTapGesture {
                     expandMiniPlayer.toggle()
                 }
         }
         .fullScreenCover(isPresented: $expandMiniPlayer) {
-            ExpandMiniView()
+            ExpandMiniView(anima: animation)
         }
     }
 }

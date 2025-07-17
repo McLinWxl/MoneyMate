@@ -9,7 +9,13 @@ import SwiftUI
 import SwiftData
 
 struct ExpandMiniView: View {
-    @Namespace private var animation
+    var animationName: Namespace.ID
+    init(anima: Namespace.ID)
+    {
+        animationName = anima
+    }
+    
+//    @Namespace private var animation
     @Query(sort: \Transaction.date, order: .reverse) var transactions: [Transaction]
     var body: some View {
         List {
@@ -52,7 +58,7 @@ struct ExpandMiniView: View {
                     }
                 }
                 .padding(.horizontal, 15)
-                .navigationTransition(.zoom(sourceID: "MINIVIEW", in: animation))
+                .navigationTransition(.zoom(sourceID: "MINIVIEW", in: animationName))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -73,4 +79,7 @@ struct ExpandMiniView: View {
 }
 
 
-#Preview { ExpandMiniView().padding() }
+//#Preview {
+//    let container = try! ModelContainer(for: Transaction.self, configurations: .init(isStoredInMemoryOnly: true))
+//    return MainAppView().modelContainer(container)
+//}

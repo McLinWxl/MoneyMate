@@ -8,51 +8,67 @@
 import SwiftUI
 import SwiftData
 
+
+
 struct BillListView: View {
-    @Query(sort: \Transaction.date, order: .reverse) var transactions: [Transaction]
-    @Environment(\.modelContext) private var context
-    @State private var showingAdd = false
+    @Query var transactions: [Transaction]
+    @State private var editingTransaction: Transaction?
+    @State private var transactionToDelete: Transaction?
+    @State private var showDeleteConfirmation = false
+    
 
     var body: some View {
-        NavigationStack {
-            List {
-                ForEach(groupedTransactions.keys.sorted(by: >), id: \.self) { day in
-                    Section(header: Text(day.formatted(date: .abbreviated, time: .omitted))) {
-                        ForEach(groupedTransactions[day]!) { t in
-                            Button {
-                                selected = t
-                                showingAdd = true
-                            } label: {
-                                HStack {
-                                    Text(t.title)
-                                    Spacer()
-                                    Text("¥\(t.amount, specifier: "%.2f")")
-                                }
-                            }
-                        }
-                        .onDelete { delete(at: $0, in: groupedTransactions[day]!) }
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                ForEach(groupedTransactions.keys.sorted(by: >), id: \.self) { date in
+                    transactionSection(for: date)
                 }
             }
-            .navigationTitle("账单")
+            .padding()
+        }
+        .navigationTitle("账单")
+        .sheet(item: $editingTransaction) { transaction in
+            NavigationStack {
+                AddEditView(transaction: .constant(transaction))
+                    .navigationTitle("编辑账单")
+            }
         }
     }
 
-    @State private var selected: Transaction?
+    @ViewBuilder
+    private func transactionSection(for date: Date) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(date.formatted(date: .abbreviated, time: .omitted))
+                .font(.headline)
+                .padding(.horizontal, 4)
 
-    private var groupedTransactions: [Date:[Transaction]] {
-        Dictionary(grouping: transactions) {
-            Calendar.current.startOfDay(for: $0.date)
+            ForEach(groupedTransactions[date] ?? []) { transaction in
+                Button {
+                    editingTransaction = transaction
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(transaction.title)
+                            .font(.body)
+                        Text("\(transaction.currency)\(transaction.amount, specifier: "%.2f")")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+//                            .shadow(radius: 1)
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
         }
     }
 
-    private func delete(at offsets: IndexSet, in section: [Transaction]) {
-        offsets.map { section[$0] }.forEach(context.delete)
+    private var groupedTransactions: [Date: [Transaction]] {
+        Dictionary(grouping: transactions) { Calendar.current.startOfDay(for: $0.date) }
     }
-}
 
-#Preview {
-    let container = try! ModelContainer(for: Transaction.self, configurations: .init(isStoredInMemoryOnly: true))
-    try! container.mainContext.insert(Transaction(title: "测试", amount: 50))
-    return BillListView().modelContainer(container)
+    @Environment(\.modelContext) private var context
 }

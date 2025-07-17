@@ -10,10 +10,14 @@ import SwiftData
 
 @main
 struct MoneyMateApp: App {
+    @StateObject private var appState = AppState()
+    
     var body: some Scene {
         WindowGroup {
             MainAppView()
-                .modelContainer(for: Transaction.self)
         }
+        .modelContainer(for: [Transaction.self, AccountType.self])
+        .environmentObject(appState)
+        
     }
 }
